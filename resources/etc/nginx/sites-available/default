@@ -1,0 +1,32 @@
+server {
+	listen 80 default_server;
+	listen [::]:80 default_server;
+
+	root /var/www;
+	index index.html index.htm index.php;
+
+	server_name _;
+
+	location / {
+		try_files $uri $uri/ =404;
+		autoindex on;
+	}
+
+	location ~ \.php$ {
+		fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+		if (!-f $document_root$fastcgi_script_name) {
+			return 404;
+		}
+		fastcgi_pass unix:/run/php/php8.0-fpm.sock;
+		fastcgi_param PATH_TRANSLATED $document_root$fastcgi_script_name;
+		include fastcgi_params;
+	}
+
+	location ~ /\.ht {
+		deny all;
+	}
+	
+	location = /404.html {
+		internal;
+	}
+}
