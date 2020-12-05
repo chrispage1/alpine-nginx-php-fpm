@@ -2,7 +2,7 @@ FROM alpine:edge
 
 # install packages
 RUN apk update && \
-    apk --no-cache add nginx nginx-mod-http-dav-ext php8 php8-common php8-curl php8-json php8-fpm php8-posix
+    apk --no-cache add runit nginx nginx-mod-http-dav-ext php8 php8-common php8-curl php8-json php8-fpm php8-posix
 
 # remove our APK cache
 RUN rm -rf /var/cache/apk/*
@@ -10,9 +10,17 @@ RUN rm -rf /var/cache/apk/*
 # copy our dependant files
 COPY resources/ /
 
+# set permissions for our entrypoint
+RUN chmod a+x /entrypoint.sh && \
+    chown nobody:nobody /entrypoint.sh
+
+# create our app directory
+RUN mkdir /app && \
+    echo "<?php phpinfo(); ?>" > /app/index.php && \
+    chown -R nginx:www-data /app
+
 # Configure PHP-FPM service
-RUN	mkdir -p /etc/service && \
-    mkdir -p /run/php && \
+RUN	mkdir -p /run/php && \
 	chgrp -R www-data /run/php && \
 	sed -i \
 		-e "s/;daemonize = yes/daemonize = no/" \
@@ -26,18 +34,20 @@ RUN	mkdir -p /etc/service && \
 		-e "s/user = nobody/user = nginx/" \
 		-e "s/group = nobody/group = www-data/" \
 		-e "s/;clear_env = no/clear_env = no/" \
-		/etc/php8/php-fpm.d/www.conf && \
-	    chmod 755 /etc/services/php-fpm/run && \
-	    ln -sf /etc/services/php-fpm /etc/service/
+		/etc/php8/php-fpm.d/www.conf
 
 # Configure nginx service
-RUN	sed -i '/^worker_processes auto;/a include /etc/nginx/modules/*.conf;' /etc/nginx/nginx.conf && \
-	mkdir -p /var/www && \
-	chown -R nginx:www-data /var/www && \
-	rm -rf /var/www/localhost && \
-	mkdir -p /etc/nginx/sites-available && \
+RUN	mkdir -p /run/nginx && \
+    chgrp -R nginx /run/nginx && \
 	mkdir -p /etc/nginx/sites-enabled && \
 	rm -f /etc/nginx/conf.d/default.conf && \
-	ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/ && \
-	chmod 755 /etc/services/nginx/run && \
-	ln -sf /etc/services/nginx /etc/service/
+	ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+
+# Expose nginx
+EXPOSE 80 80
+
+# start PHP-FPM
+ENTRYPOINT "/entrypoint.sh"
+
+# set our working directory to /app
+WORKDIR /app
