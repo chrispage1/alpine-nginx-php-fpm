@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # start php-fpm in daemon mode
-/usr/sbin/php-fpm8 --pid /run/php/php-fpm.pid -D
+/usr/sbin/php-fpm7 --pid /run/php/php-fpm.pid -D
 
 if [ $? -ne 0 ]; then
   echo "Failed to start php-fpm: $status"

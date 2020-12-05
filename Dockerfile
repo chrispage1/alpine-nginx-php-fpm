@@ -2,10 +2,10 @@ FROM alpine:edge
 
 # install packages
 RUN apk update && \
-    apk --no-cache add nginx nginx-mod-http-dav-ext php8 php8-common php8-curl php8-json \
-        php8-fpm php8-xml php8-mbstring php8-openssl php8-dom php8-exif php8-fileinfo \
-        php8-pdo php8-phar php8-simplexml php8-tokenizer php8-xmlwriter php8-posix \
-        php8-session php8-gd
+    apk --no-cache add nginx nginx-mod-http-dav-ext php7 php7-common php7-curl php7-json \
+        php7-fpm php7-xml php7-mbstring php7-openssl php7-dom php7-exif php7-fileinfo \
+        php7-pdo php7-phar php7-simplexml php7-tokenizer php7-xmlwriter php7-posix \
+        php7-session php7-gd php7-opcache php7-pdo_mysql
 
 # remove our APK cache
 RUN rm -rf /var/cache/apk/*
@@ -24,20 +24,21 @@ RUN mkdir /app && \
 
 # Configure PHP-FPM service
 RUN	mkdir -p /run/php && \
+#    ln -s /usr/bin/php7 /usr/bin/php && \
 	chgrp -R www-data /run/php && \
 	sed -i \
 		-e "s/;daemonize = yes/daemonize = no/" \
 		-e "s/;log_level = notice/log_level = warning/" \
-		-e "s/;error_log = log\\/php8\\/error.log/error_log = syslog/" \
-		/etc/php8/php-fpm.conf && \
+		-e "s/;error_log = log\\/php7\\/error.log/error_log = syslog/" \
+		/etc/php7/php-fpm.conf && \
 	sed -i \
-		-e "s/listen = 127.0.0.1:9000/listen = \\/run\\/php\\/php8.0-fpm.sock/" \
+		-e "s/listen = 127.0.0.1:9000/listen = \\/run\\/php\\/php7.0-fpm.sock/" \
 		-e "s/;listen.owner = nobody/listen.owner = nobody/" \
 		-e "s/;listen.group = nobody/listen.group = www-data/" \
 		-e "s/user = nobody/user = nginx/" \
 		-e "s/group = nobody/group = www-data/" \
 		-e "s/;clear_env = no/clear_env = no/" \
-		/etc/php8/php-fpm.d/www.conf
+		/etc/php7/php-fpm.d/www.conf
 
 # Configure nginx service
 RUN	mkdir -p /run/nginx && \

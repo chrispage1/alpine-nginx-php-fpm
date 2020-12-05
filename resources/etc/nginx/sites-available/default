@@ -1,32 +1,32 @@
 server {
-	listen 80 default_server;
-	listen [::]:80 default_server;
+    listen 80;
+    server_name _;
+    root /app/public;
 
-	root /app;
-	index index.html index.htm index.php;
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
 
-	server_name _;
+    index index.php;
 
-	location / {
-		try_files $uri $uri/ =404;
-		autoindex on;
-	}
+    charset utf-8;
 
-	location ~ \.php$ {
-		fastcgi_split_path_info ^(.+?\.php)(/.*)$;
-		if (!-f $document_root$fastcgi_script_name) {
-			return 404;
-		}
-		fastcgi_pass unix:/run/php/php8.0-fpm.sock;
-		fastcgi_param PATH_TRANSLATED $document_root$fastcgi_script_name;
-		include fastcgi_params;
-	}
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
 
-	location ~ /\.ht {
-		deny all;
-	}
-	
-	location = /404.html {
-		internal;
-	}
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
 }
