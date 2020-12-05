@@ -2,7 +2,10 @@ FROM alpine:edge
 
 # install packages
 RUN apk update && \
-    apk --no-cache add runit nginx nginx-mod-http-dav-ext php8 php8-common php8-curl php8-json php8-fpm php8-posix
+    apk --no-cache add nginx nginx-mod-http-dav-ext php8 php8-common php8-curl php8-json \
+        php8-fpm php8-xml php8-mbstring php8-openssl php8-dom php8-exif php8-fileinfo \
+        php8-pdo php8-phar php8-simplexml php8-tokenizer php8-xmlwriter php8-posix \
+        php8-session php8-gd
 
 # remove our APK cache
 RUN rm -rf /var/cache/apk/*
