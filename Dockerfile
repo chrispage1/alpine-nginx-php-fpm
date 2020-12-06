@@ -3,7 +3,10 @@ FROM php:8.0.0-fpm-alpine3.12
 
 # install our required packages
 RUN apk update && \
-    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext && \
+    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext php7 php7-common php7-curl php7-json \
+                        php8-fpm php8-xml php8-mbstring php8-openssl php8-dom php8-exif php8-fileinfo \
+                        php8-pdo php8-phar php8-simplexml php8-tokenizer php8-xmlwriter php8-posix \
+                        php8-session php8-gd php8-opcache php8-pdo_mysql && \
     docker-php-ext-configure gd --with-jpeg && \
     docker-php-ext-install exif gd
 
