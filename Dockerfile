@@ -3,12 +3,9 @@ FROM php:7.4.13-fpm-alpine3.12
 
 # install our required packages
 RUN apk update && \
-    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext php7-curl php7-json \
-                        php7-xml php7-mbstring php7-openssl php7-dom php7-exif php7-fileinfo \
-                        php7-pdo php7-phar php7-simplexml php7-tokenizer php7-xmlwriter php7-posix \
-                        php7-session php7-gd php7-opcache php7-pdo_mysql && \
+    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext && \
     docker-php-ext-configure gd --with-jpeg && \
-    docker-php-ext-install exif gd
+    docker-php-ext-install exif gd pdo_mysql opcache json
 
 # remove our APK cache
 RUN rm -rf /var/cache/apk/*
