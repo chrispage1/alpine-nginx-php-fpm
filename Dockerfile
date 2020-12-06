@@ -1,12 +1,12 @@
 # pull from official PHP-FPM
-FROM php:8.0.0-fpm-alpine3.12
+FROM php:7.4.13-fpm-alpine3.12
 
 # install our required packages
 RUN apk update && \
-    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext php7 php7-common php7-curl php7-json \
-                        php8-fpm php8-xml php8-mbstring php8-openssl php8-dom php8-exif php8-fileinfo \
-                        php8-pdo php8-phar php8-simplexml php8-tokenizer php8-xmlwriter php8-posix \
-                        php8-session php8-gd php8-opcache php8-pdo_mysql && \
+    apk --no-cache add jpeg-dev libpng-dev nginx nginx-mod-http-dav-ext php7-curl php7-json \
+                        php7-xml php7-mbstring php7-openssl php7-dom php7-exif php7-fileinfo \
+                        php7-pdo php7-phar php7-simplexml php7-tokenizer php7-xmlwriter php7-posix \
+                        php7-session php7-gd php7-opcache php7-pdo_mysql && \
     docker-php-ext-configure gd --with-jpeg && \
     docker-php-ext-install exif gd
 
