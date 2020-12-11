@@ -34,7 +34,8 @@ RUN	mkdir -p /run/nginx && \
 	ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
 # Update our php-fpm file
-RUN sed -i 's|listen = 9000|listen = /run/nginx/php-fpm-pool.sock\nlisten.owner = nginx\nlisten.group = nginx\nlisten.mode = 0660|' /usr/local/etc/php-fpm.d/zz-docker.conf
+RUN mv /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf.default
+RUN mv /etc/php-fpm/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 
 # Set permissions for our entrypoint
 RUN chmod a+x /entrypoint.sh && \
