@@ -37,15 +37,10 @@ RUN	mkdir -p /run/nginx && \
 RUN mv /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf.default
 RUN mv /etc/php-fpm/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 
-# Set permissions for our entrypoint
-RUN chmod a+x /entrypoint.sh && \
-    chown nobody:nobody /entrypoint.sh
-
 # Expose nginx & PHP-FPM
 EXPOSE 80 80
 EXPOSE 9000 9000
 
-# run our entrypoint file
 CMD php-fpm
 
 # set our working directory to /app
