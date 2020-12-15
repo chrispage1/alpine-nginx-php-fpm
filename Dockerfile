@@ -45,7 +45,7 @@ RUN chmod a+x /entrypoint.sh && \
 EXPOSE 80 80
 
 # run our entrypoint file
-ENTRYPOINT "/entrypoint.sh"
+CMD php-fpm
 
 # set our working directory to /app
 WORKDIR /app
