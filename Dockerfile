@@ -41,8 +41,9 @@ RUN mv /etc/php-fpm/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 RUN chmod a+x /entrypoint.sh && \
     chown nobody:nobody /entrypoint.sh
 
-# Expose nginx
+# Expose nginx & PHP-FPM
 EXPOSE 80 80
+EXPOSE 9000 9000
 
 # run our entrypoint file
 CMD php-fpm
