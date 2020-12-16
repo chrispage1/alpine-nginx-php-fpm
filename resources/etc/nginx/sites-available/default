@@ -13,6 +13,10 @@ server {
 
     charset utf-8;
 
+    location /ping {
+        return 200 'pong';
+    }
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
