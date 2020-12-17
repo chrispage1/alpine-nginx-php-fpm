@@ -9,8 +9,9 @@ RUN apk update && \
     docker-php-ext-install exif gd pdo_mysql opcache json && \
     docker-php-ext-enable redis
 
-# remove our APK cache
-RUN rm -rf /var/cache/apk/*
+# remove caches etc.
+RUN rm -rf /var/cache/apk/* && \
+    apk del $PHPIZE_DEPS libpng-dev jpeg-dev
 
 # copy our dependant files
 COPY resources/ /
