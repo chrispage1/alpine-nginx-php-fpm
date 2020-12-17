@@ -3,15 +3,13 @@ FROM php:7.4.13-fpm-alpine3.12
 
 # install our required packages
 RUN apk update && \
-    apk --no-cache add jpeg-dev fcgi libpng-dev nginx nginx-mod-http-dav-ext $PHPIZE_DEPS && \
-    pecl install redis && \
+    apk --no-cache add jpeg-dev fcgi libpng-dev nginx nginx-mod-http-dav-ext && \
     docker-php-ext-configure gd --with-jpeg && \
-    docker-php-ext-install exif gd pdo_mysql opcache json && \
-    docker-php-ext-enable redis
+    docker-php-ext-install exif gd pdo_mysql opcache json
 
 # remove caches etc.
 RUN rm -rf /var/cache/apk/* && \
-    apk del $PHPIZE_DEPS libpng-dev jpeg-dev
+    apk del libpng-dev jpeg-dev
 
 # copy our dependant files
 COPY resources/ /
