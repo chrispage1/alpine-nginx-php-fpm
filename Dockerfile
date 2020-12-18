@@ -8,8 +8,7 @@ RUN apk update && \
     docker-php-ext-install exif gd pdo_mysql opcache json
 
 # remove caches etc.
-RUN rm -rf /var/cache/apk/* && \
-    apk del libpng-dev jpeg-dev
+RUN rm -rf /var/cache/apk/*
 
 # copy our dependant files
 COPY resources/ /
