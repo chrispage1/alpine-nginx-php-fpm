@@ -3,8 +3,8 @@ FROM php:7.4.15-fpm-alpine3.13
 
 # install our required packages
 RUN apk update && \
-    apk --no-cache add jpeg-dev fcgi libpng-dev nginx nginx-mod-http-dav-ext pcre-dev $PHPIZE_DEPS && \
-    docker-php-ext-configure gd --with-jpeg && \
+    apk --no-cache add jpeg-dev fcgi libpng-dev libwebp-dev nginx nginx-mod-http-dav-ext pcre-dev $PHPIZE_DEPS && \
+    docker-php-ext-configure gd --with-jpeg --with-webp && \
     docker-php-ext-install exif gd pdo_mysql opcache json
     
 # install phpredis
