@@ -4,10 +4,13 @@ FROM php:7.4.15-fpm-alpine3.13
 # update our apk library
 RUN apk update
 
+# install nginx
+RUN apk --no-cache add nginx
+
 # grab php extensions package manager & install packages
-ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/1.2.15/install-php-extensions /usr/local/bin/
-RUN chmod +x /usr/local/bin/install-php-extensions
-RUN install-php-extensions redis pcntl exif gd pdo_mysql opcache json
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
+RUN chmod +x /usr/local/sbin/install-php-extensions
+RUN install-php-extensions redis pcntl exif gd pdo_mysql opcache
 
 # tidy up a little
 RUN rm -rf /var/cache/apk/*
