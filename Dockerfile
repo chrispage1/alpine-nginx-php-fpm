@@ -5,7 +5,7 @@ FROM php:7.4.15-fpm-alpine3.13
 RUN apk update
 
 # install nginx
-RUN apk --no-cache add nginx fcgi
+RUN apk --no-cache add nginx fcgi jpegoptim
 
 # grab php extensions package manager & install packages
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
