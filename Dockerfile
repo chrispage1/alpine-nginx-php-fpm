@@ -1,5 +1,5 @@
 # pull from official PHP-FPM
-FROM php:7.4.15-fpm-alpine3.13
+FROM php:8.0-fpm-alpine3.14
 
 # update our apk library
 RUN apk update
