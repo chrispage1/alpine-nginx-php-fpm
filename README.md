@@ -1,6 +1,6 @@
 # Alpine nginx php-fpm
 
-Project to run Laravel applications on a dockerised environment. Bundles php-fpm & nginx together to create a quick and easy experience.
+Project to run Laravel applications on a dockerised environment. Bundles php-fpm (8.1) & nginx together to create a quick and easy experience.
 
 ## Optimisation
 
