@@ -1,8 +1,9 @@
 # pull from official PHP-FPM
-FROM php:8.1.2-fpm-alpine3.15
+FROM php:8.1-fpm-alpine
 
 # update our apk library
 RUN apk update
+RUN apk upgrade
 
 # install nginx
 RUN apk --no-cache add nginx fcgi jpegoptim
