@@ -3,7 +3,7 @@ FROM php:8.2-fpm-alpine
 
 # update our apk library
 RUN apk update
-RUN apk upgrade
+RUN apk upgrade --no-cache
 
 # install nginx
 RUN apk --no-cache add nginx fcgi jpegoptim
