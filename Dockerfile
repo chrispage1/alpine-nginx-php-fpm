@@ -31,7 +31,6 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
         sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 512M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|post_max_size = 8M|post_max_size = 512M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|output_buffering = 0|output_buffering = 4096|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|opcache.jit_buffer_size = 0|opcache.jit_buffer_size = 64M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|memory_limit = 128M|memory_limit = 1G|' "$PHP_INI_DIR/php.ini"
 
 # optimise php-fpm's opcache
@@ -39,6 +38,8 @@ RUN printf "\n\
 opcache.memory_consumption=256\n\
 opcache.validate_timestamps=0\n\
 opcache.max_accelerated_files=10000\n\
+opcache.jit=tracing\n\
+opcache.jit_buffer_size=64M\n\
 " >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
 # move our healthcheck file
