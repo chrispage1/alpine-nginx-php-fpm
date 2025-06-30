@@ -30,7 +30,24 @@ It's up to you if you run this but it's recommended within production environmen
 The health check can be performed by running `php-fpm-healthcheck` which returns a simple status code.
 For more information, view Renatomefi's package using the link above.
 
+Using the liveness probe:
+
+```yaml
+livenessProbe:
+  exec:
+    command:
+    - php-fpm-healthcheck
+  initialDelaySeconds: 15
+  periodSeconds: 10
+readinessProbe:
+  exec:
+    command:
+    - php-fpm-healthcheck
+  initialDelaySeconds: 5
+  periodSeconds: 5
+```
+
 ## Manually building
 
 To manually build the image, you can use the build script...
-Example usage: `sh ./build.sh 8.3`
+Example usage: `sh ./build.sh 8.4`

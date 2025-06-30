@@ -1,5 +1,5 @@
 # pull from official PHP-FPM
-FROM --platform=linux/amd64 php:8.4-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # update our apk library
 RUN apk update
@@ -12,7 +12,6 @@ RUN apk --no-cache add nginx fcgi jpegoptim
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
 RUN chmod +x /usr/local/sbin/install-php-extensions
 RUN install-php-extensions redis pcntl exif gd pdo_mysql opcache zip
-
 # tidy up a little
 RUN rm -rf /var/cache/apk/*
 
@@ -26,12 +25,11 @@ RUN mkdir -p /app/public && \
 
 # update our php.ini file
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 512M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|max_file_uploads = 20|max_file_uploads = 60|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 512M|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|post_max_size = 8M|post_max_size = 512M|' "$PHP_INI_DIR/php.ini" && \
+        sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 20M|' "$PHP_INI_DIR/php.ini" && \
+        sed -i 's|post_max_size = 8M|post_max_size = 20M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|output_buffering = 0|output_buffering = 4096|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|memory_limit = 128M|memory_limit = 1G|' "$PHP_INI_DIR/php.ini"
+        sed -i 's|memory_limit = 128M|memory_limit = 64M|' "$PHP_INI_DIR/php.ini"
 
 # optimise php-fpm's opcache
 RUN printf "\n\
