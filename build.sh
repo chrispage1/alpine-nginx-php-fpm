@@ -12,6 +12,7 @@ TAG=$1
 echo "Building and tagging image with $TAG"
 sleep 1
 
+export DOCKER_DEFAULT_PLATFORM="linux/amd64"
 docker build -t motocom/nginx-php-fpm:$TAG .
 
 # push the image
