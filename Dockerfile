@@ -33,8 +33,9 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
 
 # optimise php-fpm's opcache
 RUN printf "\n\
-opcache.memory_consumption=256\n\
+opcache.memory_consumption=100\n\
 opcache.validate_timestamps=0\n\
+opcache.save_commends=0\n\
 opcache.max_accelerated_files=10000\n\
 opcache.jit=tracing\n\
 opcache.jit_buffer_size=64M\n\
