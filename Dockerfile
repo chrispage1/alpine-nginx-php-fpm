@@ -1,5 +1,5 @@
 # pull from official PHP-FPM
-FROM --platform=linux/amd64 php:8.5-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 # update our apk library
 RUN apk update
@@ -12,6 +12,7 @@ RUN apk --no-cache add nginx fcgi jpegoptim
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
 RUN chmod +x /usr/local/sbin/install-php-extensions
 RUN install-php-extensions redis pcntl exif gd pdo_mysql zip intl
+
 # tidy up a little
 RUN rm -rf /var/cache/apk/*
 
@@ -66,7 +67,7 @@ EXPOSE 80 80
 EXPOSE 9000 9000
 
 # run php-fpm
-CMD php-fpm
+CMD ["php-fpm"]
 
 # set our working directory to /app for future builds
 WORKDIR /app
