@@ -29,8 +29,13 @@ RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" && \
         sed -i 's|max_file_uploads = 20|max_file_uploads = 60|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 20M|' "$PHP_INI_DIR/php.ini" && \
         sed -i 's|post_max_size = 8M|post_max_size = 20M|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|output_buffering = 0|output_buffering = 4096|' "$PHP_INI_DIR/php.ini" && \
-        sed -i 's|memory_limit = 128M|memory_limit = 64M|' "$PHP_INI_DIR/php.ini"
+        sed -i 's|output_buffering = 0|output_buffering = 4096|' "$PHP_INI_DIR/php.ini"
+
+# log errors to self and increase memory limit
+RUN printf "\n\
+memory_limit=256M\n\
+error_log=/proc/self/fd/2\n\
+" >> /usr/local/etc/php/conf.d/php-tuning.ini
 
 # optimise php-fpm's opcache
 RUN printf "\
@@ -63,8 +68,18 @@ RUN mv /usr/local/etc/php-fpm.d/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docke
 RUN mv /etc/php-fpm/zz-docker.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 
 # Expose nginx & PHP-FPM
-EXPOSE 80 80
+EXPOSE 8080 8080
 EXPOSE 9000 9000
+
+# set our file permissions
+RUN chown -R 82:82 /app \
+    /var/lib/nginx \
+    /var/log/nginx \
+    /run/nginx \
+    /usr/local/var
+
+# set our user as www-data
+USER 82
 
 # run php-fpm
 CMD ["php-fpm"]
