@@ -41,13 +41,12 @@ error_log=/proc/self/fd/2\n\
 RUN printf "\
 opcache.memory_consumption=128M\n\
 opcache.interned_strings_buffer=15M\n\
-opcache.jit_buffer_size=128M\n\
+opcache.jit_buffer_size=0\n\
 opcache.max_accelerated_files=15000\n\
 opcache.validate_timestamps=0\n\
 opcache.save_comments=1\n\
 opcache.consistency_checks=0\n\
-opcache.jit=tracing\n\
-opcache.fast_shutdown=1\n\
+opcache.jit=disable\n\
 opcache.enable=1\n\
 opcache.enable_cli=1\n\
 " > /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
