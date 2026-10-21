@@ -1,5 +1,5 @@
 # pull from official PHP-FPM
-FROM --platform=linux/amd64 php:8.3-fpm-alpine
+FROM --platform=linux/amd64 php:8.3.36-fpm-alpine
 
 # update our apk library
 RUN apk update
@@ -11,7 +11,13 @@ RUN apk --no-cache add nginx fcgi jpegoptim
 # grab php extensions package manager & install packages
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
 RUN chmod +x /usr/local/sbin/install-php-extensions
-RUN install-php-extensions redis pcntl exif gd pdo_mysql opcache zip
+RUN install-php-extensions pcntl exif gd pdo_mysql opcache zip
+
+# install redis
+RUN apk add --no-cache php83-pecl-redis \
+    && cp /usr/lib/php83/modules/redis.so $(php-config --extension-dir)/redis.so \
+    && docker-php-ext-enable redis \
+    && apk del php83-pecl-redis
 
 # tidy up a little
 RUN rm -rf /var/cache/apk/*
