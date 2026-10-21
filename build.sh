@@ -13,6 +13,6 @@ echo "Building and tagging image with $TAG"
 sleep 1
 
 # build our image and push...
-docker buildx build --platform linux/amd64 -t motocom/nginx-php-fpm:$TAG --push .
+docker buildx build --pull --no-cache --platform linux/amd64 -t motocom/nginx-php-fpm:$TAG --push .
 
 echo "Image has been built and pushed!"
