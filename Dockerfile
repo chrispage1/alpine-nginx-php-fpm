@@ -11,13 +11,7 @@ RUN apk --no-cache add nginx fcgi jpegoptim
 # grab php extensions package manager & install packages
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/sbin/
 RUN chmod +x /usr/local/sbin/install-php-extensions
-RUN install-php-extensions pcntl exif gd pdo_mysql opcache zip
-
-# install redis
-RUN apk add --no-cache php83-pecl-redis \
-    && cp /usr/lib/php83/modules/redis.so $(php-config --extension-dir)/redis.so \
-    && docker-php-ext-enable redis \
-    && apk del php83-pecl-redis
+RUN install-php-extensions redis pcntl exif gd pdo_mysql opcache zip
 
 # tidy up a little
 RUN rm -rf /var/cache/apk/*
