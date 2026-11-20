@@ -1,0 +1,32 @@
+version: 2
+# Dependabot reads this file from the default branch only. Each docker entry below targets one version branch.
+# The pinned php:X.Y.Z-fpm-alpine tag moves within its series; a new PHP minor is a deliberate branch, not an update.
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    target-branch: v8.3
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: php
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
+  - package-ecosystem: docker
+    directory: /
+    target-branch: v8.4
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: php
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
+  - package-ecosystem: docker
+    directory: /
+    target-branch: v8.5
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: php
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
