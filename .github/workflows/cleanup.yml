@@ -1,0 +1,75 @@
+name: Clean up old tags
+
+# Deletes the dated tags (<version>-YYYYMMDD) older than KEEP_DAYS from Docker Hub. The floating tag (<version>) and
+# the commit tag (<version>-<sha>) are never touched, and neither are versions outside VERSIONS.
+#
+# Runs weekly from the default branch. Run it by hand with dry_run ticked to list what it would delete first.
+# Needs DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, and the token needs Read, Write & Delete access.
+
+on:
+  schedule:
+    - cron: '41 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only list the tags that would be deleted
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup
+  cancel-in-progress: false
+
+env:
+  IMAGE: motocom/nginx-php-fpm
+  VERSIONS: '8.1 8.2 8.3 8.4 8.5'
+  KEEP_DAYS: '30'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old dated tags
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::Add the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN repository secrets."
+            exit 1
+          fi
+
+          jwt=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_TOKEN" '{identifier: $u, secret: $p}' \
+            | curl -fsS -H 'Content-Type: application/json' -d @- https://hub.docker.com/v2/auth/token | jq -r .access_token)
+          [ -n "$jwt" ] && [ "$jwt" != null ] || { echo "::error::Docker Hub login failed."; exit 1; }
+
+          # Collect every tag, page by page.
+          tags=()
+          url="https://hub.docker.com/v2/repositories/$IMAGE/tags?page_size=100"
+          while [ -n "$url" ]; do
+            page=$(curl -fsS -H "Authorization: Bearer $jwt" "$url")
+            tags+=($(jq -r '.results[].name' <<< "$page"))
+            url=$(jq -r '.next // empty' <<< "$page")
+          done
+
+          cutoff=$(date -u -d "$KEEP_DAYS days ago" +%Y%m%d)
+          count=0
+          for t in "${tags[@]}"; do
+            [[ "$t" =~ ^([0-9]+\.[0-9]+)-([0-9]{8})$ ]] || continue
+            v=${BASH_REMATCH[1]}
+            d=${BASH_REMATCH[2]}
+            case " $VERSIONS " in *" $v "*) ;; *) continue ;; esac
+            [ "$d" -lt "$cutoff" ] || continue
+            echo "old: $t"
+            [ "$DRY_RUN" = true ] || curl -fsS -X DELETE -H "Authorization: Bearer $jwt" "https://hub.docker.com/v2/repositories/$IMAGE/tags/$t/"
+            count=$((count + 1))
+          done
+
+          verb=Deleted
+          [ "$DRY_RUN" != true ] || verb="Would delete"
+          echo "$verb $count dated tags older than $cutoff." | tee -a "$GITHUB_STEP_SUMMARY"
