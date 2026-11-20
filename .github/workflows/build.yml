@@ -82,7 +82,7 @@ jobs:
             echo "fresh=$fresh"
           } >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
       - name: Build
         uses: docker/build-push-action@v6
