@@ -1,0 +1,172 @@
+name: Build image
+
+# Builds, smoke tests and scans the image on every branch. The branches in PUBLISH_BRANCHES are also pushed to
+# Docker Hub as motocom/nginx-php-fpm:<branch without the leading v>, plus a dated tag and a commit tag.
+# Other branches (legacy PHP versions on end-of-life Alpine) build and scan only, so a rebuild can never overwrite
+# a tag an app may be pinned to. Run the workflow by hand with "publish" ticked to push one of them anyway.
+#
+# The nightly rebuild only runs from the default branch (GitHub fires schedules nowhere else). It rebuilds every
+# branch in PUBLISH_BRANCHES with a fresh pull and no cache, so the latest Alpine nginx lands without anyone
+# remembering to rebuild.
+#
+# Needs the repository secrets DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (a token that can push to motocom/nginx-php-fpm).
+# This file is identical on every branch. Keep it that way.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Push the image to Docker Hub (any branch)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.event_name == 'schedule' && 'nightly' || github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+env:
+  IMAGE: motocom/nginx-php-fpm
+  PUBLISH_BRANCHES: 'v8.1 v8.2 v8.3 v8.4 v8.5'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        env:
+          EVENT: ${{ github.event_name }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          if [ "$EVENT" = schedule ]; then branches="$PUBLISH_BRANCHES"; else branches="$BRANCH"; fi
+          echo "matrix=$(printf '%s\n' $branches | jq -R . | jq -sc '{branch: .}')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'schedule' && matrix.branch || '' }}
+
+      - name: Work out the tag and whether to publish
+        id: meta
+        env:
+          BRANCH: ${{ matrix.branch }}
+          EVENT: ${{ github.event_name }}
+          PUBLISH_INPUT: ${{ inputs.publish }}
+        run: |
+          publish=false
+          case " $PUBLISH_BRANCHES " in *" $BRANCH "*) in_list=true ;; *) in_list=false ;; esac
+          case "$EVENT" in
+            push | schedule) [ "$in_list" = true ] && publish=true ;;
+            workflow_dispatch) [ "$PUBLISH_INPUT" = true ] && publish=true ;;
+          esac
+          fresh=false
+          case "$EVENT" in schedule | workflow_dispatch) fresh=true ;; esac
+          {
+            echo "tag=${BRANCH#v}"
+            echo "publish=$publish"
+            echo "fresh=$fresh"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE }}:build
+          pull: true
+          no-cache: ${{ steps.meta.outputs.fresh == 'true' }}
+          cache-from: ${{ steps.meta.outputs.fresh == 'false' && format('type=gha,scope={0}', matrix.branch) || '' }}
+          cache-to: ${{ steps.meta.outputs.fresh == 'false' && format('type=gha,mode=max,scope={0}', matrix.branch) || '' }}
+
+      - name: Smoke test
+        run: |
+          img="$IMAGE:build"
+          docker run --rm "$img" nginx -t
+          docker run --rm "$img" php-fpm -t
+          mods=$(docker run --rm "$img" php -m)
+          # Check every extension the Dockerfile asks install-php-extensions for.
+          exts=$(grep -E 'install-php-extensions ' Dockerfile | tail -1 | sed 's/.*install-php-extensions//')
+          for e in $exts; do
+            [ "$e" = opcache ] && e="Zend OPcache"
+            echo "$mods" | grep -qix "$e" || { echo "::error::PHP extension missing from the image: $e"; exit 1; }
+          done
+          {
+            echo "### ${{ matrix.branch }}"
+            echo '```'
+            docker run --rm "$img" nginx -v 2>&1
+            docker run --rm "$img" php -v | head -1
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Scan nginx with Trivy
+        env:
+          PUBLISH: ${{ steps.meta.outputs.publish }}
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD:/out" \
+            aquasec/trivy:latest image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL \
+            --format json --output /out/trivy.json "$IMAGE:build"
+          # A scan of an end-of-life Alpine release returns nothing, which would look like a pass. Say so.
+          if [ "$(jq -r '.Metadata.OS.EOSL // false' trivy.json)" = true ]; then
+            echo "::warning::${{ matrix.branch }}: the base OS is end-of-life, so nginx here can neither be patched nor scanned reliably."
+            echo "**Base OS is end-of-life: nginx cannot be patched or scanned reliably.**" >> "$GITHUB_STEP_SUMMARY"
+            [ "$PUBLISH" = true ] && exit 1
+          fi
+          jq -r '[.Results[]?.Vulnerabilities[]? | select(.PkgName == "nginx")] | unique_by(.VulnerabilityID)[] | "\(.VulnerabilityID) \(.Severity) installed \(.InstalledVersion) fixed in \(.FixedVersion)"' trivy.json > nginx-findings.txt
+          others=$(jq '[.Results[]?.Vulnerabilities[]? | select(.PkgName != "nginx")] | length' trivy.json)
+          echo "Other fixable HIGH or CRITICAL findings in the image (not blocking): $others" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s nginx-findings.txt ]; then
+            echo "::error::nginx has fixable HIGH or CRITICAL vulnerabilities in ${{ matrix.branch }}"
+            cat nginx-findings.txt
+            { echo "**nginx findings:**"; echo '```'; cat nginx-findings.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Check Docker Hub credentials
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -z "$DOCKERHUB_USERNAME" ] || [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::Add the DOCKERHUB_USERNAME and DOCKERHUB_TOKEN repository secrets to publish."
+            exit 1
+          fi
+
+      - uses: docker/login-action@v3
+        if: steps.meta.outputs.publish == 'true'
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          sha=$(git rev-parse --short=7 HEAD)
+          for t in "$TAG" "$TAG-$(date -u +%Y%m%d)" "$TAG-$sha"; do
+            docker tag "$IMAGE:build" "$IMAGE:$t"
+            docker push "$IMAGE:$t"
+          done
+          digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE:$TAG")
+          { echo "Pushed \`$IMAGE:$TAG\` (also \`$TAG-$sha\`):"; echo '```'; echo "$digest"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
