@@ -1,5 +1,5 @@
 # pull from official PHP-FPM
-FROM --platform=linux/amd64 php:8.3.36-fpm-alpine
+FROM --platform=linux/amd64 php:8.3.37-fpm-alpine
 
 # update our apk library
 RUN apk update
